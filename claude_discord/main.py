@@ -95,6 +95,10 @@ async def main() -> None:
     coordination_channel_id = (
         int(config["coordination_channel_id"]) if config["coordination_channel_id"] else None
     )
+    # When coordination channel == main channel, disable Discord forwarding to prevent
+    # session lifecycle / lounge messages appearing as noise in the conversation channel.
+    if coordination_channel_id == channel_id:
+        coordination_channel_id = None
     bot = ClaudeDiscordBot(
         channel_id=channel_id,
         owner_id=owner_id,

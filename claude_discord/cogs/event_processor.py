@@ -218,6 +218,7 @@ class EventProcessor:
         if not self._config.session_id and not self._session_start_sent:
             await self._config.thread.send(embed=session_start_embed(self._state.session_id))
             self._session_start_sent = True
+            await self._post_session_ids()
 
     async def _on_assistant(self, event: StreamEvent) -> None:
         """Handle ASSISTANT events — thinking, streaming text, tool use."""
@@ -479,6 +480,21 @@ class EventProcessor:
         except Exception:
             logger.warning(
                 "Failed to post todo embed; will retry on next TodoWrite call", exc_info=True
+            )
+
+    async def _post_session_ids(self) -> None:
+        """Post Discord thread ID and Claude session ID as a subtext message.
+
+        Called once when a new session starts. Useful for resuming the session
+        locally via `claude --resume <session_id>`.
+        """
+        session_id = self._state.session_id
+        if not session_id:
+            return
+        thread_id = self._config.thread.id
+        with contextlib.suppress(discord.HTTPException):
+            await self._config.thread.send(
+                f"-# 🔑 Thread: `{thread_id}` | Session: `{session_id}`"
             )
 
     async def _bump_stop(self) -> None:
