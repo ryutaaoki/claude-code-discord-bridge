@@ -117,6 +117,7 @@ async def main() -> None:
             repo=notification_repo,
             bot=bot,
             default_channel_id=channel_id,
+            lounge_channel_id=coordination_channel_id,
             host=config["api_host"],
             port=int(config["api_port"]),
         )
