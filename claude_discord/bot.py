@@ -35,6 +35,7 @@ class ClaudeDiscordBot(commands.Bot):
         lounge_repo: LoungeRepository | None = None,
         lounge_channel_id: int | None = None,
         worktree_manager: WorktreeManager | None = None,
+        dashboard_enabled: bool = True,
     ) -> None:
         intents = discord.Intents.default()
         intents.message_content = True
@@ -47,6 +48,7 @@ class ClaudeDiscordBot(commands.Bot):
         self.channel_id = channel_id
         self.owner_id = owner_id
         self.session_registry = SessionRegistry()
+        self.dashboard_enabled = dashboard_enabled
         # Optional repo for AskUserQuestion restart recovery
         self.ask_repo: PendingAskRepository | None = ask_repo
         # Populated after on_ready when the channel is resolved
@@ -70,7 +72,7 @@ class ClaudeDiscordBot(commands.Bot):
 
         # Initialise the thread-status dashboard once we have a live channel object
         channel = self.get_channel(self.channel_id)
-        if isinstance(channel, discord.TextChannel):
+        if self.dashboard_enabled and isinstance(channel, discord.TextChannel):
             from .discord_ui.thread_dashboard import ThreadStatusDashboard
 
             self.thread_dashboard = ThreadStatusDashboard(
@@ -79,6 +81,8 @@ class ClaudeDiscordBot(commands.Bot):
             )
             await self.thread_dashboard.initialize()
             logger.info("Thread status dashboard initialised in channel %d", self.channel_id)
+        elif not self.dashboard_enabled:
+            logger.info("Thread status dashboard disabled")
         else:
             logger.warning(
                 "Could not resolve channel %d to a TextChannel; dashboard disabled",

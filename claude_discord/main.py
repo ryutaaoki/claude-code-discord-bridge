@@ -57,6 +57,7 @@ def load_config() -> dict[str, str]:
         "api_port": os.getenv("API_PORT", ""),
         "allowed_tools": os.getenv("CLAUDE_ALLOWED_TOOLS", ""),
         "custom_cogs_dir": os.getenv("CUSTOM_COGS_DIR", ""),
+        "dashboard_enabled": os.getenv("DASHBOARD_ENABLED", "true"),
     }
 
 
@@ -99,10 +100,12 @@ async def main() -> None:
     # session lifecycle / lounge messages appearing as noise in the conversation channel.
     if coordination_channel_id == channel_id:
         coordination_channel_id = None
+    dashboard_enabled = config["dashboard_enabled"].lower() not in ("false", "0", "no")
     bot = ClaudeDiscordBot(
         channel_id=channel_id,
         owner_id=owner_id,
         coordination_channel_id=coordination_channel_id,
+        dashboard_enabled=dashboard_enabled,
     )
 
     # Optional API server
