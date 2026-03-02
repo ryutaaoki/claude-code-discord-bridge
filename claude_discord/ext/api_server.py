@@ -51,6 +51,9 @@ class ApiServer:
         await api.stop()
     """
 
+    #: Sentinel meaning "caller did not specify lounge_channel_id; use env var fallback".
+    _LOUNGE_CHANNEL_UNSET: object = object()
+
     def __init__(
         self,
         repo: NotificationRepository,
@@ -61,7 +64,7 @@ class ApiServer:
         api_secret: str | None = None,
         task_repo: TaskRepository | None = None,
         lounge_repo: LoungeRepository | None = None,
-        lounge_channel_id: int | None = None,
+        lounge_channel_id: int | None | object = _LOUNGE_CHANNEL_UNSET,
         resume_repo: PendingResumeRepository | None = None,
         session_repo: SessionRepository | None = None,
     ) -> None:
@@ -75,11 +78,12 @@ class ApiServer:
         self.lounge_repo = lounge_repo
         self.resume_repo = resume_repo
         self.session_repo = session_repo
-        # Fall back to COORDINATION_CHANNEL_ID so lounge shares the same channel
-        if lounge_channel_id is None:
+        # Fall back to COORDINATION_CHANNEL_ID only when caller did not explicitly
+        # specify lounge_channel_id. Passing None explicitly means "no lounge channel".
+        if lounge_channel_id is ApiServer._LOUNGE_CHANNEL_UNSET:
             ch_str = os.getenv("COORDINATION_CHANNEL_ID", "")
             lounge_channel_id = int(ch_str) if ch_str.isdigit() else None
-        self.lounge_channel_id = lounge_channel_id
+        self.lounge_channel_id: int | None = lounge_channel_id  # type: ignore[assignment]
 
         self.app = web.Application()
         if self.api_secret:
