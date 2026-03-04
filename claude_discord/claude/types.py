@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -62,6 +63,25 @@ TOOL_CATEGORIES: dict[str, ToolCategory] = {
     "TodoWrite": ToolCategory.TASK,
     "ExitPlanMode": ToolCategory.PLAN,
 }
+
+# Path prefixes to shorten in tool display names. Ordered longest-first so
+# more-specific prefixes match before shorter ones (e.g. ~/Library/... before ~).
+_HOME = os.path.expanduser("~")
+_PATH_ALIASES: list[tuple[str, str]] = [
+    (
+        os.path.join(_HOME, "Library/Mobile Documents/iCloud~md~obsidian/Documents/RyutaAoki"),
+        "$VAULT",
+    ),
+    (_HOME, "~"),
+]
+
+
+def _shorten_path(path: str) -> str:
+    """Replace long path prefixes with short aliases for display."""
+    for prefix, alias in _PATH_ALIASES:
+        if path.startswith(prefix):
+            return alias + path[len(prefix):]
+    return path
 
 
 @dataclass
@@ -128,11 +148,11 @@ class ToolUseEvent:
         inp = self.tool_input
 
         if name == "Read":
-            return f"Reading: {inp.get('file_path', 'unknown')}"
+            return f"Reading: {_shorten_path(inp.get('file_path', 'unknown'))}"
         if name == "Write":
-            return f"Writing: {inp.get('file_path', 'unknown')}"
+            return f"Writing: {_shorten_path(inp.get('file_path', 'unknown'))}"
         if name == "Edit":
-            return f"Editing: {inp.get('file_path', 'unknown')}"
+            return f"Editing: {_shorten_path(inp.get('file_path', 'unknown'))}"
         if name in ("Glob", "Grep"):
             pattern = inp.get("pattern", inp.get("glob", ""))
             return f"Searching: {pattern}"
